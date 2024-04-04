@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.spring_course</groupId>
-	<artifactId>FoodOrderApp</artifactId>
+	<artifactId>ShoppingApp_Service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>FoodOrderApp</name>
+	<name>ShoppingApp_Service</name>
 	<description>project for Spring Boot</description>
 	<properties>
 		<java.version>17</java.version>

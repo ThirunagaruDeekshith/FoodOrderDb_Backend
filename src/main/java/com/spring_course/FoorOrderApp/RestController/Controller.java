@@ -3,11 +3,14 @@ package com.spring_course.FoorOrderApp.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.JSONPObject;
-import com.spring_course.FoorOrderApp.DAO.DishesDAO;
-import com.spring_course.FoorOrderApp.DAO.Dishes_DAO;
-import com.spring_course.FoorOrderApp.Model.DishesEntity;
-import org.springframework.asm.TypeReference;
+import com.spring_course.FoorOrderApp.Configurations.Id_genarator;
+import com.spring_course.FoorOrderApp.DAO.CustomerDAO;
+import com.spring_course.FoorOrderApp.DAO.Items_DAO;
+import com.spring_course.FoorOrderApp.DAO.OrderItemsDAO;
+import com.spring_course.FoorOrderApp.Model.Customer_details;
+import com.spring_course.FoorOrderApp.Model.ItemsEntity;
+import com.spring_course.FoorOrderApp.Model.Ordered_items;
+import org.aspectj.lang.reflect.LockSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,17 +27,19 @@ public class Controller {
 
     private Map<String, Object> orderData;
     @Autowired
-    private Dishes_DAO dishesDao;
+    private Items_DAO itemsDao;
+    @Autowired
+    private CustomerDAO customerDAO;
 
+    @Autowired
+    private OrderItemsDAO orderItemsDAO;
     @CrossOrigin(origins = "*")
-    @GetMapping("/meals")
+    @GetMapping("/items")
     JsonNode meals_request() throws IOException {
-//        FileInputStream fi = new FileInputStream("D:\\spring-boot\\FoodOrderApp\\FoodOrderApp\\src\\main\\resources\\static\\available_indian_meals.json");
         ObjectMapper objectMapper = new ObjectMapper();
 
-//        System.out.println(data);
-        Iterable<DishesEntity> dishesIterable = dishesDao.getAllDishes();
-        List<DishesEntity> dishesList = new ArrayList<>();
+        Iterable<ItemsEntity> dishesIterable = itemsDao.getAllItems();
+        List<ItemsEntity> dishesList = new ArrayList<>();
         dishesIterable.forEach(dishesList::add);
         String dishes=objectMapper.writeValueAsString(dishesList);
         ObjectMapper objectMapper2 = new ObjectMapper();
@@ -62,7 +67,7 @@ public class Controller {
                 !customer.get("email").contains("@") ||
                 customer.get("name") == null ||
                 customer.get("name").trim() == "" ||
-                customer.get("street").trim() == "" ||
+                customer.get("address").trim() == "" ||
                 customer.get("postal-code") == null ||
                 customer.get("postal-code").trim() == ""||
                 customer.get("city") == null ||
@@ -75,20 +80,53 @@ public class Controller {
         System.out.println(customer);
         System.out.println(OrderData);
         ObjectMapper objectMapper = new ObjectMapper();
+        Id_genarator id_genarator=new Id_genarator();
+        String customer_id= id_genarator.geneate_id(3);
 
+        Customer_details customer_details=new Customer_details(
+                customer_id,
+                customer.get("name"),
+                customer.get("email"),
+                customer.get("address"),
+                customer.get("postal-code"),
+                customer.get("city"),
+                customer.get("phone_number")
+
+                );
+
+        customerDAO.saveCustomer(customer_details);
+        System.out.println("Customer Saved");
+        List<Map<String,String>>Ordered_items_map= (List<Map<java.lang.String,java.lang.String>>)order.get("items");
+        System.out.println(Ordered_items_map);
+         for(Map<String,String> Ordered_item : Ordered_items_map){
+            System.out.println(  String.valueOf(Ordered_item.get("quantity")));
+            Ordered_items ordered_items=new Ordered_items(
+                     id_genarator.geneate_id(3),
+//                     "7S5",
+                     Ordered_item.get("name"),
+             Ordered_item.get("price"),
+                     Ordered_item.get("description"),
+                    Integer.parseInt(String.valueOf(Ordered_item.get("quantity"))),
+                     customer_details
+             );
+             orderItemsDAO.saveOrderItem(ordered_items);
+
+         }
+        System.out.println("Order items Saved");
         // Define output JSON file
-        File outputFile = new File("./src/main/resources/static/orders.json");
+//        File outputFile = new File("./src/main/resources/static/orders.json");
 
-        try {
-            // Write OrderData map to JSON file
-            FileWriter fileWriter = new FileWriter(outputFile, true);
-            objectMapper.writeValue(outputFile, OrderData);
-            fileWriter.write("\n");
-
-            System.out.println("Order data successfully written to orders.json");
-        } catch (IOException e) {
-            System.err.println("Error writing order data to JSON file: " + e.getMessage());
-        }
+//        try {
+////            // Write OrderData map to JSON file
+////            FileWriter fileWriter = new FileWriter(outputFile, true);
+////            objectMapper.writeValue(outputFile, OrderData);
+////            fileWriter.write("\n");
+//
+//
+//            System.out.println("Order data successfully written to orders.json");
+//        } catch (IOException e) {
+//            System.err.println("Error writing order data to JSON file: " + e.getMessage());
+//        }
         return new ResponseEntity<>("Order placed successfully", HttpStatus.OK);
     }
 
